@@ -27,7 +27,7 @@ GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-b^f@8tys+-1t3+sax0-5z&0y857ta_p(v7lsj0#z(#4$s++%mj"
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
