@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, viewsets
 from .models import MileageEntry
 from .serializers import MileageEntrySerializer
-from tracker.utils import get_distance_in_miles
+from tracker.utils import fetch_distance_from_google_maps
 
 
 # Create your views here.
@@ -17,7 +17,7 @@ class MileageEntryViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         instance = serializer.save()
-        miles_driven = get_distance_in_miles(instance.start_location, instance.end_location)
+        miles_driven = fetch_distance_from_google_maps(instance.start_location, instance.end_location)
         
         # If the API fails to fetch distance, default to 0
         instance.miles_driven = miles_driven if miles_driven is not None else 0
@@ -36,7 +36,7 @@ class GetDistanceView(APIView):
         if not origin or not destination:
             return Response({"error": "Both origin and destination are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        miles_driven = get_distance_in_miles(origin, destination)
+        miles_driven = fetch_distance_from_google_maps(origin, destination)
         if miles_driven is None:
             return Response({"error": "Failed to fetch data from Google Maps API."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

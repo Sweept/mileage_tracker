@@ -1,5 +1,5 @@
 from django.db import models
-from tracker.utils import get_distance_in_miles
+from tracker.utils import fetch_distance_from_google_maps
 
 # Manually input miles, duration, and locations. 
 # Automatically calculates average speed before saving based on the formula: Speed = Distance / Time
@@ -14,7 +14,7 @@ class MileageEntry(models.Model):
     def save(self, *args, **kwargs):
         """Fetch miles_driven from Google Maps API if not manually provided and calculate average speed."""
         if self.miles_driven is None:
-            self.miles_driven = get_distance_in_miles(self.start_location, self.end_location) or 0  # Default to 0 if API fails
+            self.miles_driven = fetch_distance_from_google_maps(self.start_location, self.end_location) or 0  # Default to 0 if API fails
 
         if self.miles_driven and self.duration and self.duration > 0:
             self.average_speed = self.miles_driven / self.duration

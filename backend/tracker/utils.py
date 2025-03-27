@@ -2,29 +2,41 @@ import requests
 import logging
 from django.conf import settings
 
-def get_distance_in_miles(start_location, end_location):
+logger = logging.getLogger(__name__)
+
+def fetch_distance_from_google_maps(start_location, end_location):
+    """Fetch distance between two locations using Google Maps API."""
     google_maps_api_key = settings.GOOGLE_MAPS_API_KEY
     base_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
 
     params = {
         "origins": start_location,
         "destinations": end_location,
-        "units": "imperial",  # Get distance in miles
+        "units": "imperial",
         "key": google_maps_api_key,
     }
 
-    response = requests.get(base_url, params=params)
-    data = response.json()
+    try:
+        response = requests.get(base_url, params=params, timeout=5)
+        response.raise_for_status()  # Raises an error for HTTP failures (4xx, 5xx)
+        data = response.json()
 
-    # Log the response for debugging
-    logging.debug(f"Google Maps API Response: {data}")
-
-    if response.status_code == 200 and data.get("rows"):
-        try:
-            distance_text = data["rows"][0]["elements"][0]["distance"]["text"]
-            return float(distance_text.replace(" mi", ""))  # Convert "XX mi" to float
-        except (KeyError, ValueError):
-            logging.error(f"Error parsing distance from response: {e}")
+        if "rows" not in data or not data["rows"][0]["elements"]:
+            logger.error("Invalid response format from Google Maps API: %s", data)
             return None
-    logging.error("Failed to fetch valid data from Google Maps API.")
-    return None  # Return None if API call fails
+
+        distance_text = data["rows"][0]["elements"][0].get("distance", {}).get("text")
+        if not distance_text:
+            logger.warning("Google Maps API did not return a distance for %s -> %s", start_location, end_location)
+            return None
+
+        return float(distance_text.replace(" mi", ""))
+    
+    except requests.exceptions.Timeout:
+        logger.error("Request to Google Maps API timed out.")
+    except requests.exceptions.RequestException as e:
+        logger.error("Error while calling Google Maps API: %s", e)
+    except (KeyError, ValueError) as e:
+        logger.error("Unexpected response structure from Google Maps API: %s", e)
+    
+    return None
