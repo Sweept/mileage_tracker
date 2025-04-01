@@ -1,4 +1,5 @@
 import requests
+import logging
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,28 +9,33 @@ from .models import MileageEntry
 from .serializers import MileageEntrySerializer
 from tracker.utils import fetch_distance_from_google_maps
 
+logger = logging.getLogger(__name__)
+
 
 # Create your views here.
 class MileageEntryViewSet(viewsets.ModelViewSet):
+    
     queryset = MileageEntry.objects.all()  # Retrieve all mileage entries
     serializer_class = MileageEntrySerializer  # Serialize data for the API
     permission_classes = [IsAuthenticated]  # Require authentication
     
+    # Fetch distance between two locations
     def perform_create(self, serializer):
         instance = serializer.save()
-        miles_driven = fetch_distance_from_google_maps(instance.start_location, instance.end_location)
-        
-        # If the API fails to fetch distance, default to 0
-        instance.miles_driven = miles_driven if miles_driven is not None else 0
-        instance.save()
+        distance = fetch_distance_from_google_maps(instance.start_location, instance.end_location)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if distance is not None :
+            instance.miles_driven = distance
+            instance.save()
+        else:
+            logger.warning("Failed to fetch distance for %s -> %s", instance.start_location, instance.end_location)
+
 
 
 class GetDistanceView(APIView):
-    """API endpoint to fetch distance between two locations using Google Maps API."""
+    
+    # API endpoint to fetch distance between two locations
     def post(self, request):
-        """Handles POST request to fetch driving distance."""
         origin = request.data.get("origin")
         destination = request.data.get("destination")
 

@@ -8,6 +8,7 @@ def fetch_distance_from_google_maps(start_location, end_location):
     """Fetch distance between two locations using Google Maps API."""
     google_maps_api_key = settings.GOOGLE_MAPS_API_KEY
     base_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+    # print("Loaded API Key:", settings.GOOGLE_MAPS_API_KEY)
 
     params = {
         "origins": start_location,
@@ -21,6 +22,9 @@ def fetch_distance_from_google_maps(start_location, end_location):
         response.raise_for_status()  # Raises an error for HTTP failures (4xx, 5xx)
         data = response.json()
 
+        print("Google Maps API Response:", data)
+        logger.error(f"Google Maps API Response: {data}")
+        
         if "rows" not in data or not data["rows"][0]["elements"]:
             logger.error("Invalid response format from Google Maps API: %s", data)
             return None
